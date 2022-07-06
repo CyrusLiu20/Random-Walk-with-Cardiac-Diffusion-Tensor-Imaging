@@ -2,7 +2,9 @@
 #define SIMULATION_H
 
 #include "walkers.h"
-// #include <eigen3\Eigen\Dense>
+#include "../MRI/sequence.h"
+#include "../montecarlo/particle_state.h"
+#include "../geometry/polygon.h"
 #include <random>
 
 class simulation{
@@ -16,15 +18,30 @@ public:
 	~simulation() = default;
 
     bool seedParticlesInBox(Eigen::MatrixXd boundingboxes_input, int particlesPerBox_input);
-    // void performScan(sequencefile sequence, substratefile substrate)
+    void performScan(sequence sequence_input, substrate substrate_input);
+    particle_state onewalker(sequence &sequence_input, substrate &substrate_input, int i_particle, Eigen::Vector3d position, Eigen::Vector3d phase_input, bool flag);
+    Eigen::VectorXd one_dt(Eigen::Vector3d &position, double &dt, substrate &substrate_input, int &myoindex);
+    Eigen::Vector3d getLimitedSteps(std::string &dim, double &maxStepLength);
 
     // A custom function for refilling missing particles
     Eigen::VectorXd refill(Eigen::VectorXd particlesPerBox, int missing_particles);
 
     // data retreival
     Eigen::MatrixXd get_position();
+    std::vector<particle_state> get_states();
 
 private:
+
+    // Compute the normal distance
+    Eigen::Vector3d reflect(Eigen::Vector3d &oldstep, Eigen::MatrixXd &faceVertices);
+    double computeNormalDistance(Eigen::MatrixXd &faceVertices, Eigen::Vector3d &step);
+
+    // History of all the particles position, phase, and flag
+    std::vector<particle_state> particle_states;
+    // The sequence and the substrate used in this simulation
+    // sequence sequence_simulation; // operator not yet built
+    // substrate substrate_simulation;
+
 
     // Random seed
     std::random_device rd;   

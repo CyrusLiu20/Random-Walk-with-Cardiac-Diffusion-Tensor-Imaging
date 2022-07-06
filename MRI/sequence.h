@@ -29,6 +29,39 @@ public:
     int N;
     // What is this?
     double bvalue;
+
+    // input data
+    void input_dt(Eigen::VectorXd input){
+        dt = input;
+    };
+    
+    void input_gG(Eigen::MatrixXd input){
+        gG = input;
+    };
+
+    // Data retrieval
+    Eigen::VectorXd get_dt_entire(){
+        return dt;
+    };
+
+    Eigen::MatrixXd get_gG_entire(){
+        return gG;
+    };
+
+    double get_total_time(){
+        return dt.sum();
+    };
+
+    double get_dt(int n){
+        return dt(n);
+    };
+
+    Eigen::VectorXd get_gG(int n){
+        return gG(n, Eigen::all);
+    };
+
+private:
+
     // Time step
     Eigen::VectorXd dt;
     // Something gradient

@@ -15,9 +15,12 @@ public:
 	~montecarlofile() = default;
 
     // Initial seed for the random number generator
-    unsigned int rngseed = 30;
+    unsigned int rngseed = 8;
     // Number of walkers
-    int N_p = 10;
+    int N_p = 1500;
+
+    // stepping type used in the simulation
+    std::string stepType = "constant";
 
     // Whether text or vector is used
     std::string seedbox_type = "text"; // either "text" or "numeric"

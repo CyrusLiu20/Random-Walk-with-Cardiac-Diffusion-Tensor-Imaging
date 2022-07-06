@@ -23,6 +23,13 @@ public:
         }
     }
 
+    bool containsPoint(Eigen::Vector3d &point){
+        bool isInside = (point(0) > bb_range(0) && point(0) < bb_range(1))  // inside in x, and
+                          && (point(1) > bb_range(2) && point(1) < bb_range(3))  // inside in y, and
+                          && (point(2) > bb_range(4) && point(2) < bb_range(5)); // inside in 
+        return isInside;
+    }
+
     // Bounding box range
     Eigen::VectorXd bb_range;
 

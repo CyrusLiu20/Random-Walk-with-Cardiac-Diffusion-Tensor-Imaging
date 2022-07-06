@@ -15,6 +15,11 @@ polygon::polygon(Eigen::MatrixXd vertices_input, Eigen::MatrixXd faces_input){
     polygon::volume_compute(vertices_input, faces_input);
     polygon::surface_compute(vertices_input, faces_input);
 
+    // For intersection functions
+    V1 = polygon::get_vertices(0);
+    V2 = polygon::get_vertices(1);
+    V3 = polygon::get_vertices(2);
+    vertices_extracted = true;
 
     // Computing the bounding box range
     bb_range.resize(6);
@@ -84,6 +89,117 @@ void polygon::volume_compute(Eigen::MatrixXd &vertices_input, Eigen::MatrixXd &f
     volume = volume > 0 ? volume : -volume;
 }
 
+bool polygon::containsPoint(Eigen::Vector3d &point, unsigned int &seed){
+    // A polyhedron contains a point if and only if a ray eminating from that point
+    // intersects the faces of the polyhedron an odd number of times.
+
+    if (not((point.array() >= minXYZ.array()).all() and (point.array() <= maxXYZ.array()).all())){
+        return false;
+    }
+
+    // Ensure vertices has been extracted
+    if (not(vertices_extracted)){
+        // For intersection functions
+        V1 = polygon::get_vertices(0);
+        V2 = polygon::get_vertices(1);
+        V3 = polygon::get_vertices(2);
+        vertices_extracted = true;        
+    }
+
+    Eigen::VectorXd dists = (Vertices.rowwise() - point.transpose()).rowwise().norm();
+    double maxdist = dists.maxCoeff();
+
+    bool odd;
+    bool certain = false;
+    int counter = 0;
+    // Not sure if the monte carlo seed is needed
+    std::mt19937 gen(seed);
+
+    // std::cout << dists.transpose() << std::endl;
+
+    while (not(certain)){
+        counter++;
+        if (counter > 50){
+            printf("Polyhedron:containsPoint:counter', 'Too many attempts\n");
+            break;
+        }
+
+        // determine ray
+        // std::mt19937 gen(rd());
+        std::uniform_real_distribution<> direction(0, 1);
+        Eigen::Vector3d dir;
+        dir << direction(gen), direction(gen), direction(gen); // three random variables from
+        dir = dir.array()-0.5; // pick random direction
+        dir = dir.array()/dir.norm(); // unit vector
+        dir = dir*maxdist*10; // long enough to fully pass through polyhedron
+
+        // compute intersections and test
+        // Eigen::Vector3d dir_debug;
+        // dir_debug << 417.385807530152	,91.0704977246554	,-474.300439156235; // Please remember to remove this
+        intersection_ray_info ray = polygon::TriangleRayIntersection(point, dir);
+        // intersection_ray_info ray = polygon::TriangleRayIntersection(point, dir_debug);
+        int nIntersects = ray.intersect.cast<double>().sum(); // Number of intersections
+        odd = nIntersects % 2 > 0; // inside if odd
+
+        // std::cout << ray.intersect.transpose() << std::endl;
+        // make sure ray stays away fron surface triangle edges
+        certain = polygon::intersection_is_certain(ray, false, 1e-6);
+    
+    }
+
+    return odd;
+}
+
+intersection_info polygon::intersection(Eigen::Vector3d &orig, Eigen::Vector3d &dir){
+    intersection_info output;
+
+    // Ensure vertices has been extracted
+    if (not(vertices_extracted)){
+        // For intersection functions
+        V1 = polygon::get_vertices(0);
+        V2 = polygon::get_vertices(1);
+        V3 = polygon::get_vertices(2);
+        vertices_extracted = true;        
+    }
+
+    intersection_ray_info ray = polygon::TriangleRayIntersection(orig, dir);
+    // if ((ray.intersect.any())){
+    if (not(ray.intersect.any())){
+        return output;
+    }
+
+    // make sure ray stays away from face edges (includes vertices)
+    if (not(polygon::intersection_is_certain(ray, true, 1e-6))){
+        std::cout << "Polyhedron:intersection:uncertain', 'Too close to edge/vertex/face" << std::endl;
+    }
+
+    // find closest intersection and get info
+    Eigen::VectorXd found_t = polygon::find_element(ray.t, ray.intersect);
+    if (not(polygon::is_unique(found_t))){
+        std::cout << "Polyhedron:intersection:duplicate, Two equal t found" << std::endl;
+    }
+
+    if (found_t.size() == 0){
+        return output;
+    }
+    else{
+        double min_t = found_t.minCoeff();
+        int min_faceIDs = polygon::find_first_index(found_t, min_t);
+        Eigen::VectorXd found_ID = polygon::find_index(ray.intersect);
+        int faceID = found_ID(min_faceIDs);
+
+        // Store
+        output.empty = false;
+        output.t = min_t;
+        output.vertices.resize(3,3);
+        output.vertices(0, Eigen::all) = V1(faceID, Eigen::all);
+        output.vertices(1, Eigen::all) = V2(faceID, Eigen::all);
+        output.vertices(2, Eigen::all) = V3(faceID, Eigen::all);
+    
+    }
+
+    return output;
+}
 
 // This is too slow!!!!!!
 void polygon::surface_compute(Eigen::MatrixXd &vertices_input, Eigen::MatrixXd &faces_input){
@@ -123,6 +239,170 @@ void polygon::surface_compute(Eigen::MatrixXd &vertices_input, Eigen::MatrixXd &
     surface_area = area_surface.sum();
 }
 
+Eigen::MatrixXd polygon::get_vertices(int column){
+    return Vertices(Faces(Eigen::all, column).array()-1, Eigen::all);
+}
+
+bool polygon::intersection_is_certain(intersection_ray_info &ray, bool test_end = false, double eps = 1e-6){
+
+    Eigen::MatrixXd bary(ray.intersect.rows(), 3);
+    bary(Eigen::all, 0) = ray.u;
+    bary(Eigen::all, 1) = ray.v;
+    bary(Eigen::all, 2) = 1 - ray.u.array() - ray.v.array();
+
+    // std::cout << polygon::find_element(bary, ray.intersect).array().abs() << std::endl;
+    Eigen::VectorXd min_abs_bary = (polygon::find_element(bary, ray.intersect).array().abs()).rowwise().minCoeff();
+    Eigen::VectorXd abs_t0_int = (polygon::find_element(ray.t, ray.intersect).array().abs());
+    Eigen::VectorXd abs_t1_int = (1-polygon::find_element(ray.t, ray.intersect).array()).abs();
+
+    bool certain = (min_abs_bary.array() > eps).all() and (abs_t0_int.array() > eps).all();
+    if (test_end){
+        certain = certain and (abs_t1_int.array() > eps).all();
+    }
+
+    return certain;
+}
+
+intersection_ray_info polygon::TriangleRayIntersection(Eigen::Vector3d &point, Eigen::Vector3d &direction){
+    // Modified version of TriangleRayIntersection.
+    //
+    // Original Author:
+    //    Jarek Tuszynski (jaroslaw.w.tuszynski@leidos.com)
+    //
+    // License: BSD license (http://en.wikipedia.org/wiki/BSD_licenses)
+
+    intersection_ray_info output;
+
+    int Nverts = V1.rows();
+    Eigen::MatrixXd orig = Eigen::MatrixXd::Ones(Nverts,3).array().rowwise()*point.transpose().array();
+    Eigen::MatrixXd dir = Eigen::MatrixXd::Ones(Nverts,3).array().rowwise()*direction.transpose().array();
+
+    // tolerances
+    double eps = 1e-20;
+    double zero = 0.0;
+
+    output.intersect.resize(Nverts, 1);
+    output.intersect.fill(false);
+    // output.intersect = Eigen::VectorXd::Zero(Nverts);
+    output.t = Eigen::VectorXd::Ones(Nverts)*-1; // infinite is replaced by -1 in matlab
+    output.u = Eigen::VectorXd::Ones(Nverts)*-1;
+    output.v = Eigen::VectorXd::Ones(Nverts)*-1;
+
+    // some pre-calculations
+    Eigen::MatrixXd edge1 = V2 - V1; // find vectors for two edges sharing V1
+    Eigen::MatrixXd edge2 = V3 - V1;
+    Eigen::MatrixXd tvec = orig - V1; // vector from V1 to ray origin
+
+    Eigen::MatrixXd pvec = crossMat(dir, edge2);
+    Eigen::MatrixXd qvec = crossMat(tvec, edge1);
+    Eigen::VectorXd det = (edge1.array()*pvec.array()).rowwise().sum(); // determinant of the matrix M = dot(edge1, pvec)
+
+    // find faces parallel to the ray
+    Eigen::Array<bool, Eigen::Dynamic, 1> angleOK = (det.array().abs2() > eps).array(); // if det ~ 0 then ray lies in the triangle plane   
+    if ((angleOK == false).all()){
+        printf("polygon::TriangleRayIntersection::angle not within tolerance\n");
+        return output;
+    }
+    // To do : change to avoid division by zero
+
+    // calculate all variables for all line/triangle pairs
+    output.u = (tvec.array()*pvec.array()).rowwise().sum().array()/det.array();
+    output.v = (dir.array()*qvec.array()).rowwise().sum().array()/det.array();
+    output.t = (edge2.array()*qvec.array()).rowwise().sum().array()/det.array();
+
+    // test if line/plane intersection is within the triangle
+    Eigen::Array<bool, Eigen::Dynamic, 1> ok = (angleOK and (output.u.array() > -zero).array() and (output.v.array() > -zero).array() and ((output.u + output.v).array() <= 1+zero).array());
+    // std::cout << ok.cast<double>().sum() << std::endl;
+    output.intersect = (ok and (output.t.array()>=-zero).array() and (output.t.array() <= 1+zero).array());
+
+    return output;
+}
+
+Eigen::MatrixXd polygon::crossMat(Eigen::MatrixXd &a, Eigen::MatrixXd &b){
+    Eigen::MatrixXd output(a.rows(), 3);
+    for (int i = 0; i < a.rows(); i++){
+        output(i, {0, 1, 2}) = a(i, {0, 1, 2}).cross(b(i, {0, 1, 2}));
+    }
+    return output;
+}
+
 Eigen::Vector3d polygon::get_minXYZ(){
     return minXYZ;
+}
+
+// very Stupid finding element method
+Eigen::MatrixXd polygon::find_element(Eigen::MatrixXd &target, Eigen::Array<bool, Eigen::Dynamic, 1> &input){
+    int rows = input.cast<double>().sum();
+    Eigen::MatrixXd output(rows, 3);
+    if (rows != 0){
+        int counter = 0;
+        for (int i = 0; i < input.rows(); i++){
+            if (input(i)){
+
+                output(counter, Eigen::all) = target(i, Eigen::all);
+                counter++;
+
+            }
+        }
+    }
+    return output;
+}
+
+// very Stupid finding element method
+Eigen::VectorXd polygon::find_element(Eigen::VectorXd &target, Eigen::Array<bool, Eigen::Dynamic, 1> &input){
+    int rows = input.cast<double>().sum();
+    Eigen::VectorXd output(rows);
+    if (rows != 0){
+        int counter = 0;
+        for (int i = 0; i < input.rows(); i++){
+            if (input(i)){
+                output(counter) = target(i);
+                counter++;
+            }
+        }
+    }
+    return output;
+}
+
+// very Stupid finding element method
+Eigen::VectorXd polygon::find_index(Eigen::Array<bool, Eigen::Dynamic, 1> &input){
+    int rows = input.cast<double>().sum();
+    Eigen::VectorXd output(rows);
+    if (rows != 0){
+        int counter = 0;
+        for (int i = 0; i < input.rows(); i++){
+            if (input(i)){
+                output(counter) = i;
+                counter++;
+            }
+        }
+    }
+    return output;
+}
+
+int polygon::find_first_index(Eigen::VectorXd &input, double &target){
+    int output;
+    for (int i = 0; i < input.rows(); i++){
+        if (input(i) == target){
+            output = i;
+            break;
+        }
+    }
+
+    return output;
+}
+
+// Stupid method to check if vector is unique
+bool polygon::is_unique(Eigen::VectorXd &input){
+    bool flag = true;
+    for (int i = 0; i < input.rows()-1 ; i++){
+        for (int j = i+1; j < input.rows(); j++){
+            if (input(i) == input(j)){
+                flag = false;
+                break;
+            }
+        }
+    }
+
+    return flag;
 }

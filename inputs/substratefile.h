@@ -21,7 +21,7 @@ public:
     double x_frequency = 0; // frquency in x for the sinusoidal transform
     bool shift_block = false;  
 
-    std::string substrate_type = "";
+    std::string substrate_type = ""; // This will be inputted later when scanning myocytes
 
     // myocyte
     std::string filename = "geometry_0.mat";

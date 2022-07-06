@@ -1,0 +1,22 @@
+#ifndef TRANSFORM_PARAMETER_H
+#define TRANSFORM_PARAMETER_H
+
+class transform_parameter{
+
+public:
+
+    transform_parameter() = default;
+
+    Eigen::Vector3d position_local;
+    double angle;
+    double angle_reverse; // The rotation angle in rotate_y function
+
+    double iX = 0;
+    double iY = 0;
+    double iZ = 0;
+
+    bool transform_inverse = false;
+
+};
+
+#endif

@@ -21,11 +21,12 @@ public:
     walkers &operator =(const walkers &pSrc);	// Transfer of resourses using equal sign
 
     // Initialize
-    bool initialize(int N_p_input, int seed_input);
+    bool initialize(int N_p_input, int seed_input, std::string stepType);
 
     // Data retrieval
     int get_N_p();
     unsigned int get_rng_seed();
+    std::string get_steptype();
 
     // [nP x DIM] array of [x, y, z]-positions of all particles
     // [nP x DIM] array of accumulated [x, y, z]-phase of all particles

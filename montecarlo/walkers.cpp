@@ -18,13 +18,14 @@ walkers &walkers::operator =(const walkers &pSrc){
 }
 
 walkers::walkers(montecarlofile parameters){
-    walkers::initialize(parameters.N_p, parameters.rngseed);
+    walkers::initialize(parameters.N_p, parameters.rngseed, parameters.stepType);
 }
 
-bool walkers::initialize(int N_p_input, int seed_input){
+bool walkers::initialize(int N_p_input, int seed_input, std::string stepType_input){
     // Check if Number of particles and the seed is specified
     N_p = N_p_input;
     rng_seed = seed_input;
+    stepType = stepType_input;
     if (not(N_p == -1 and seed_input == -1)){
        initialized = true;
     }
@@ -33,7 +34,7 @@ bool walkers::initialize(int N_p_input, int seed_input){
     }
 
     position = Eigen::MatrixXd::Zero(N_p, 3); // initially located at origin
-    position = Eigen::MatrixXd::Zero(N_p, 3); // initially no accuired phase
+    phase = Eigen::MatrixXd::Zero(N_p, 3); // initially no accuired phase
     flag = Eigen::VectorXd::Zero(N_p,1); // initially unflagged
 
     return initialized ? true : false;
@@ -47,5 +48,7 @@ unsigned int walkers::get_rng_seed(){
     return rng_seed;
 }
 
-
+std::string walkers::get_steptype(){
+    return stepType;
+}
 

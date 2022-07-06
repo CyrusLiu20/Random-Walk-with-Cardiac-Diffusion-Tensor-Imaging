@@ -3,16 +3,25 @@
 
 #include "myocytes.h"
 #include "../geometry/polygon.h"
+#include "../geometry/intersection_info.h"
+#include "../substrate/transform.h"
 
 class substrate{
 
 public:
 
+    substrate() = default;
     substrate(substratefile substratefile);
     void myocytes_scan(myocytes myocytes_input);
 
     // Build the bounding box for the block
     void buildcache();
+    // Find the position of the particles in the myocytes
+    int findMyocyte(Eigen::Vector3d position, unsigned int seed, std::string refFrame);
+    int search_myocytes(Eigen::Vector3d position_local, unsigned int &seed);
+
+    intersection_info intersectMyocytes(Eigen::Vector3d &position, Eigen::Vector3d &dxdydz, std::string refFrame);
+    Eigen::Array<bool, Eigen::Dynamic, 1> needsChecking(Eigen::Vector3d &position_updated, Eigen::Vector3d &dxdydz, std::string refFrame);
 
     // Detailed version of myocytes with bounding box, volume etc
     std::vector<polygon> myos;
@@ -30,6 +39,9 @@ public:
     // boundary type
     std::string boundary;
 
+    // Transform parameters
+    transform substrate_transform;
+
     // Diffusion properties
     std::string transit_model;
     double kappa;
@@ -41,6 +53,8 @@ private:
 
     // Stupid iteration method
     Eigen::VectorXd iteration(double a, double b, double step);
+    // Very stupid finding index method
+    Eigen::VectorXd find_index(Eigen::Array<bool, Eigen::Dynamic, 1> &input);
     // Custom absolute function
     double absolute(double input);
 
@@ -61,18 +75,22 @@ private:
     // substrate type
     std::string substrate_type;
 
-    // Transform parameters
-    double yextent_min;
-    double yextent_max;
+    // // Transform parameters
+    // transform substrate_transform;
 
-    int deg_rot_per_L_in_y; // degree of rotation per unit length in y
-    double z_amplitude; // amplitude in z for the sinusoidal transform
-    double x_frequency; // frquency in x for the sinusoidal transform
-    bool shift_block;  
+    // To be deleted
+
+    // double yextent_min;
+    // double yextent_max;
+
+    // int deg_rot_per_L_in_y; // degree of rotation per unit length in y
+    // double z_amplitude; // amplitude in z for the sinusoidal transform
+    // double x_frequency; // frquency in x for the sinusoidal transform
+    // bool shift_block;  
     
-    bool isIdentity;
+    // bool isIdentity;
 
-    Eigen::Vector3d dxdydz_bb;
+    // Eigen::Vector3d dxdydz_bb;
 };
 
 #endif

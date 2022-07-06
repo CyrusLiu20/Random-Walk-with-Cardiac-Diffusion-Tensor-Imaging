@@ -6,8 +6,8 @@ sequence ScanSequence::Scan(Eigen::VectorXd dt_input, Eigen::MatrixXd gG_input){
     sequence sequence_result;
 
     sequence_result.N = dt_input.rows();
-    sequence_result.dt = dt_input;
-    sequence_result.gG = gG_input;
+    sequence_result.input_dt(dt_input);
+    sequence_result.input_gG(gG_input);
     
     // Temporary containers to calculate b values
     Eigen::VectorXd t = ScanSequence::cumsum(dt_input);
