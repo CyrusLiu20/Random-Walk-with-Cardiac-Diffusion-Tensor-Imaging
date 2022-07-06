@@ -1,1 +1,0 @@
-g++ run_sim.cpp -o 
