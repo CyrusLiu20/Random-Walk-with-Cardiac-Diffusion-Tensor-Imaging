@@ -1,9 +1,9 @@
 #include <cstdio>
 #include <chrono>
-// #include <eigen3/Eigen/Dense>
-#include "eigen3/Eigen/Dense"
+#include <eigen3/Eigen/Dense>
 #include <iostream>
 #include <matio.h>
+
 
 // Inputs
 #include "inputs/montecarlofile.h"
@@ -14,10 +14,13 @@
 #include "substrate/read_myocytes.h"
 #include "substrate/myocytes.h"
 #include "substrate/substrate.h"
+#include "substrate/transform.h"
+#include "substrate/transform_parameter.h"
 
 // Monte Carlo
 #include "montecarlo/walkers.h"
 #include "montecarlo/simulation.h"
+#include "montecarlo/particle_state.h"
 
 // // MRI
 #include "MRI/sequence.h"
@@ -26,19 +29,23 @@
 // Geometry
 #include "geometry/polygon.h"
 #include "geometry/boundingbox.h"
+#include "geometry/intersection_ray_info.h"
+#include "geometry/intersection_info.h"
 
 // CPP files VScode debugging use
+#include "saving_file.h."
 #include "substrate/read_myocytes.cpp"
 #include "montecarlo/walkers.cpp"
 #include "montecarlo/simulation.cpp"
 #include "MRI/scansequence.cpp"
 #include "substrate/substrate.cpp"
+#include "substrate/transform.cpp"
 #include "geometry/polygon.cpp"
 
 int main(int argc, char *argv[]){
 
     // Monitor the computational time
-    auto begin = std::chrono::steady_clock::now();
+    auto begin_total = std::chrono::steady_clock::now();
 
     // Configurating sequence
     ScanSequence scanner;
@@ -90,7 +97,7 @@ int main(int argc, char *argv[]){
         }
 
         if (montecarlo_raw.seedbox_text.find("buffer")){
-            simulation_time_total = sequence.dt.sum();
+            simulation_time_total = sequence.get_total_time();
             for (int i = 0; i < dim; i++){
                 buffer({i*2,i*2+1}) << -1, 1;
             }
@@ -107,18 +114,26 @@ int main(int argc, char *argv[]){
     system.seedParticlesInBox(seedboxes);
     Eigen::MatrixXd pos0 = system.get_position();
 
-    std::cout << pos0 << std::endl;
+    auto begin_simulation = std::chrono::steady_clock::now();
+    system.performScan(sequence, substrate);
+    auto finish_simulation = std::chrono::steady_clock::now();
 
-    // Eigen::MatrixXd boundingbox(2,6); // Temporary bounding box
-    // boundingbox << 1, 1.2, 3.2, 5.6, 4.3, 6.4,
-    //                1, 1.2, 3.2, 5.6, 4.3, 6.4;
-    // printf("Testing : seedInParticleBox testing results : %s\n", system.seedParticlesInBox(boundingbox) ? "True" : "false");
+    std::vector<particle_state> states = system.get_states();
+    for (int i = 0; i < states.size(); i++){
+        std::cout << "Particle number : " << i <<  " Position : " << states[i].position.transpose() << std::endl;
+        std::cout << "Phase : " << states[i].phase.transpose() << " Myoindex : " << states[i].myoindex << std::endl;
+    }
 
-    auto finish = std::chrono::steady_clock::now();
-	double run_time = std::chrono::duration_cast<std::chrono::milliseconds>(finish - begin).count()/(double)1000;///1000000.0;
-    printf("Simulation time : %lf (seconds)\n", run_time);
+    auto finish_total = std::chrono::steady_clock::now();
+	double run_time_total = std::chrono::duration_cast<std::chrono::milliseconds>(finish_total - begin_total).count()/(double)1000;///1000000.0;
+	double run_time_simulation = std::chrono::duration_cast<std::chrono::milliseconds>(finish_simulation - begin_simulation).count()/(double)1000;///1000000.0;
 
-    // Testing site
+    // Save results
+    saving_file result(states);
+
+    printf("Simulation time (perform scan) : %lf (seconds)\n", run_time_simulation);
+    printf("Total simulation time : %lf (seconds)\n", run_time_total);
+
 
     return 0;
 }
