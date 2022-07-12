@@ -38,7 +38,7 @@ public:
         }
     }
 
-    std::string type = "MCSE";
+    std::string type = "STEAM";
 
     double Gmax;
     double Delta, delta1, delta2;
@@ -52,8 +52,8 @@ public:
     // number of time steps
     int N_t = 100;
     // time step limit [dt_free, dt_grad]
-    double dt_max_free = 0.01;
-    double dt_max_grad = 0.01;
+    double dt_max_free = 0.5;
+    double dt_max_grad = 0.05;
 
 };
 

@@ -203,25 +203,24 @@ void simulation::performScan(sequence sequence_input, substrate substrate_input)
     // loop over all particles (all independent, thus parallel)
 
     Eigen::Vector3d position_i, phase_i;
-    // For serial computation
-    for (int i_particle = 0; i_particle < obj.get_N_p(); i_particle++){
-        // std::cout << "Performscan : particle number : " << i_particle << std::endl;
-        position_i = obj.position(i_particle, Eigen::all); // Maybe use reference?
-        phase_i = obj.phase(i_particle, Eigen::all); // Maybe use reference?
-        particle_states[i_particle] = simulation::onewalker(sequence_input, substrate_input, i_particle, position_i, phase_i, obj.flag(i_particle));
-    
-        
-        // printf("Number of particles done %d / %d\n", i_particle+1, obj.get_N_p());
-    }
 
+    int number_of_particles = obj.get_N_p();
+    omp_set_num_threads(number_of_particles);
+    #pragma omp parallel private(phase_i, position_i, unit_test)
+    #pragma omp for
+    for (int i_particle = 0; i_particle < number_of_particles; i_particle++){
+            position_i = obj.position(i_particle, Eigen::all);
+            phase_i = obj.phase(i_particle, Eigen::all);
+            particle_states[i_particle] = simulation::onewalker(sequence_input, substrate_input, i_particle, position_i, phase_i, obj.flag(i_particle));
+            // std::cout << particle_states[i_particle].position.transpose() << std::endl;
+    }    
+
+    #pragma omp barrier
 }
 
 // The simualtion of one particle, position, phase, and the flag is the state of that one particle
 particle_state simulation::onewalker(sequence &sequence_input, substrate &substrate_input, int i_particle, Eigen::Vector3d position_input, Eigen::Vector3d phase_input, bool flag){
-    std::cout << "One walker : " << i_particle << std::endl;
-    // if (i_particle == 35){
-    //     std::cout << "duck" << std::endl;
-    // }
+    // std::cout << "One walker : " << i_particle << std::endl;
 
     particle_state one_particle_state;
     int myoindex = -1;
@@ -233,7 +232,13 @@ particle_state simulation::onewalker(sequence &sequence_input, substrate &substr
     // position_debug << 459.572626877480	,122.515217206226	,66.2432912305783;
 
     Eigen::Vector3d phase = phase_input;
-    Eigen::Vector3d position = position_input;
+    Eigen::Vector3d position = Eigen::Vector3d::Zero(3);
+    if (not(debugging)){
+        position = position_input;
+    }
+    else{
+        position = unit_test.initial_positions(i_particle, Eigen::all);
+    }
     // Eigen::Vector3d position = position_debug;
 
 
@@ -284,34 +289,43 @@ particle_state simulation::onewalker(sequence &sequence_input, substrate &substr
                     break;
                 }
 
-                try{
-                    // std::cout << "Time step : " << i << std::endl;
-                    // if (i == 5){
+                // try{
+                    // if (i == 225){
+                    //     std::cout << "Time step : " << i << std::endl;
                     //     std::cout << "Duck" << std::endl;
                     // }
-                    Eigen::VectorXd position_raw = simulation::one_dt(position, dt, substrate_input, myoindex);
-                    // if (i == 2000){
+                    Eigen::VectorXd position_raw = simulation::one_dt(position, dt, substrate_input, myoindex, i_particle, i);
+                    // std::cout << i << std::endl;
+                    // printf("One walker position raw : %lf, %lf, %lf\n", position_raw(0), position_raw(1), position_raw(2));                   
+                    // if (i == 1499){
+
+
+
                     //     std::cout << "Duck" << std::endl;
                     // }
                     position = position_raw({0,1,2});
                     myoindex = position_raw(3);
                     step_success = true;
 
-                }
-                catch (const std::exception &ex){
-                    // std::cout << ex.what() << std::endl;
-                    throw;
-                }
+                // }
+                // catch (const std::exception &ex){
+                //     // std::cout << ex.what() << std::endl;
+                //     throw;
+                // }
             }
         }
         catch (const std::exception &ex){
-            std::cout << ex.what() << std::endl;
-
-            // To do ： Sorting error exceptions
-
-            obj.flag(i_particle) = 1;
-            step_success = true; // Don't deal with this particle
-            break;
+            const char* error_message = ex.what();
+            if (error_message == "Polyhedron:intersection:uncertain', 'Too close to edge/vertex/face" or error_message == "ParticleWalker:one_dt:unfinished, Step has not finished after 50 substeps"){
+                step_success = false;
+            }
+            else{
+                // To do ： Sorting error exceptions
+                std::cout << ex.what() << std::endl;
+                obj.flag(i_particle) = 1;
+                step_success = true; // Don't deal with this particle
+                break;
+            }
         }
     }
 
@@ -323,13 +337,19 @@ particle_state simulation::onewalker(sequence &sequence_input, substrate &substr
     return one_particle_state;
 }
 
-Eigen::VectorXd simulation::one_dt(Eigen::Vector3d &position, double &dt, substrate &substrate_input, int &myoindex){
-    Eigen::VectorXd output(4);
+Eigen::VectorXd simulation::one_dt(Eigen::Vector3d &position, double &dt, substrate &substrate_input, int &myoindex, int &i_particle, int &timestep){
+    Eigen::VectorXd output = Eigen::VectorXd::Zero(4);;
     double maxStepLength = 5;
     std::mt19937 gen(rd());
 
-    Eigen::Vector3d dxdydz_normaldistrib = simulation::getLimitedSteps(substrate_input.dim, maxStepLength);
-    // Eigen::Vector3d dxdydz_debug{{-1, 1, 0}};
+    Eigen::Vector3d dxdydz_normaldistrib = Eigen::Vector3d::Zero(3);
+    if (not(debugging)){
+        dxdydz_normaldistrib = simulation::getLimitedSteps(substrate_input.dim, maxStepLength);
+    }
+    else{
+        dxdydz_normaldistrib = unit_test.directions[i_particle](timestep, Eigen::all);
+    }
+    // Eigen::Vector3d dxdydz_debug{{-1, -1, 0}};
     double D_old;
     if (myoindex < 0){
         D_old = substrate_input.D_e;
@@ -348,13 +368,18 @@ Eigen::VectorXd simulation::one_dt(Eigen::Vector3d &position, double &dt, substr
     double probability_of_transit, ds, term; // Distrance normal to boundary
     double D_low, l_low, p_fieremans, p_maruyama;
     transform_parameter transform_info;
-    Eigen::Vector3d position_LOCAL, position_future, dxdydz_toIntersection;
+    Eigen::Vector3d position_LOCAL = Eigen::Vector3d::Zero(3);
+    Eigen::Vector3d position_future = Eigen::Vector3d::Zero(3);
+    Eigen::Vector3d dxdydz_toIntersection = Eigen::Vector3d::Zero(3);
     try{
         while (dxdydz.norm() > ZERO){
             D_old = D_new;
             counter++;
+            // if (counter == 2){
+            //     std::cout << "One dt:: counter = 2" << std::endl;
+            // }
             if (counter > 50){
-                std::cout << "ParticleWalker:one_dt:unfinished, Step has not finished after 50 substeps" << std::endl;
+                throw std::logic_error("ParticleWalker:one_dt:unfinished, Step has not finished after 50 substeps\n");
                 break;
             }
             
@@ -386,12 +411,13 @@ Eigen::VectorXd simulation::one_dt(Eigen::Vector3d &position, double &dt, substr
                         dxdydz = simulation::reflect(dxdydz, intersectInfoBB.vertices);
                     }
 
-                    position_LOCAL = position_LOCAL + dxdydz;
+                    position_LOCAL = position_LOCAL + dxdydz_toIntersection;
+                    position_LOCAL = position_LOCAL + dxdydz*stepEps;
                     dxdydz = dxdydz*(1-stepEps);
                 }
                 else{
                     position_LOCAL = position_LOCAL + dxdydz; // no need to worry about 'position_LOCAL'
-                    dxdydz << 0, 0, 0;
+                    dxdydz = Eigen::Vector3d::Zero(3);
                 }
             }
             else{ // If an intersection was encountered
@@ -418,7 +444,7 @@ Eigen::VectorXd simulation::one_dt(Eigen::Vector3d &position, double &dt, substr
                         l_low = ds * std::sqrt(D_low/D_old);
                         term = 2 * l_low * substrate_input.kappa/D_low;
                         p_fieremans = term/(term+1);
-                        p_maruyama = std::sqrt(substrate_input.D_i/D_old) > 1 ? std::sqrt(substrate_input.D_i/D_old) : 1; // equivalent to matlab min(1,sqrt(substrate.D_i/D_old))
+                        p_maruyama = std::sqrt(substrate_input.D_i/D_old) > 1 ? 1 : std::sqrt(substrate_input.D_i/D_old); // equivalent to matlab min(1,sqrt(substrate.D_i/D_old))
                         probability_of_transit = p_fieremans*p_maruyama;
                     }
                     else{
@@ -433,7 +459,14 @@ Eigen::VectorXd simulation::one_dt(Eigen::Vector3d &position, double &dt, substr
                 }
 
                 std::uniform_real_distribution<> transit(0, 1);
-                double U = transit(gen);
+                double U;
+                if (not(debugging)){
+                    U = transit(gen);
+                }
+                else{
+                    // U = unit_test.probabilities[i_particle](timestep);
+                    U = 0.2;
+                }
                 
                 if (U < probability_of_transit){
                     // %TODO: ensure boundary cases (rand==0 or rand==1) are handled correctly
@@ -570,6 +603,13 @@ double simulation::computeNormalDistance(Eigen::MatrixXd &faceVertices, Eigen::V
 
     return distance;
 }
+
+void simulation::load_test_module(testing test){
+    unit_test = test;
+    debugging = true;
+    std::cout << "Please be alert : debugging mode activated" << std::endl;
+}
+
 
 Eigen::MatrixXd simulation::get_position(){
     return obj.position;

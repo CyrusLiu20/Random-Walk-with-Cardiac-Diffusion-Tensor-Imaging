@@ -5,6 +5,7 @@
 #include "../MRI/sequence.h"
 #include "../montecarlo/particle_state.h"
 #include "../geometry/polygon.h"
+#include "../testing/testing.h"
 #include <random>
 
 class simulation{
@@ -20,7 +21,7 @@ public:
     bool seedParticlesInBox(Eigen::MatrixXd boundingboxes_input, int particlesPerBox_input);
     void performScan(sequence sequence_input, substrate substrate_input);
     particle_state onewalker(sequence &sequence_input, substrate &substrate_input, int i_particle, Eigen::Vector3d position, Eigen::Vector3d phase_input, bool flag);
-    Eigen::VectorXd one_dt(Eigen::Vector3d &position, double &dt, substrate &substrate_input, int &myoindex);
+    Eigen::VectorXd one_dt(Eigen::Vector3d &position, double &dt, substrate &substrate_input, int &myoindex, int &i_particle, int &timestep);
     Eigen::Vector3d getLimitedSteps(std::string &dim, double &maxStepLength);
 
     // A custom function for refilling missing particles
@@ -29,6 +30,9 @@ public:
     // data retreival
     Eigen::MatrixXd get_position();
     std::vector<particle_state> get_states();
+
+    // For debugging purposes
+    void load_test_module(testing test);
 
 private:
 
@@ -77,6 +81,11 @@ private:
     // Total box volumes
     double total_boxVolume;
 
+
+    // For debugging purposes
+    testing unit_test;
+    bool counter_more_than_one = false;
+    bool debugging = false;
 };
 
 #endif
