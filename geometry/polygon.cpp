@@ -93,7 +93,8 @@ bool polygon::containsPoint(Eigen::Vector3d &point, unsigned int &seed){
     // A polyhedron contains a point if and only if a ray eminating from that point
     // intersects the faces of the polyhedron an odd number of times.
 
-    if (not((point.array() >= minXYZ.array()).all() and (point.array() <= maxXYZ.array()).all())){
+    if (not((point.array() >= minXYZ.array()) and (point.array() <= maxXYZ.array())).all()){
+    // if (not((point.array() >= minXYZ.array()).all() and (point.array() <= maxXYZ.array()).all())){
         return false;
     }
 
@@ -170,7 +171,8 @@ intersection_info polygon::intersection(Eigen::Vector3d &orig, Eigen::Vector3d &
 
     // make sure ray stays away from face edges (includes vertices)
     if (not(polygon::intersection_is_certain(ray, true, 1e-6))){
-        std::cout << "Polyhedron:intersection:uncertain', 'Too close to edge/vertex/face" << std::endl;
+        throw std::logic_error("Polyhedron:intersection:uncertain', 'Too close to edge/vertex/face\n");
+        // std::cout << "Polyhedron:intersection:uncertain', 'Too close to edge/vertex/face" << std::endl;
     }
 
     // find closest intersection and get info
@@ -319,7 +321,7 @@ intersection_ray_info polygon::TriangleRayIntersection(Eigen::Vector3d &point, E
 }
 
 Eigen::MatrixXd polygon::crossMat(Eigen::MatrixXd &a, Eigen::MatrixXd &b){
-    Eigen::MatrixXd output(a.rows(), 3);
+    Eigen::MatrixXd output = Eigen::MatrixXd::Zero(a.rows(), 3);
     for (int i = 0; i < a.rows(); i++){
         output(i, {0, 1, 2}) = a(i, {0, 1, 2}).cross(b(i, {0, 1, 2}));
     }
@@ -333,7 +335,7 @@ Eigen::Vector3d polygon::get_minXYZ(){
 // very Stupid finding element method
 Eigen::MatrixXd polygon::find_element(Eigen::MatrixXd &target, Eigen::Array<bool, Eigen::Dynamic, 1> &input){
     int rows = input.cast<double>().sum();
-    Eigen::MatrixXd output(rows, 3);
+    Eigen::MatrixXd output = Eigen::MatrixXd::Zero(rows, 3);
     if (rows != 0){
         int counter = 0;
         for (int i = 0; i < input.rows(); i++){
@@ -351,7 +353,7 @@ Eigen::MatrixXd polygon::find_element(Eigen::MatrixXd &target, Eigen::Array<bool
 // very Stupid finding element method
 Eigen::VectorXd polygon::find_element(Eigen::VectorXd &target, Eigen::Array<bool, Eigen::Dynamic, 1> &input){
     int rows = input.cast<double>().sum();
-    Eigen::VectorXd output(rows);
+    Eigen::VectorXd output = Eigen::VectorXd::Zero(rows);
     if (rows != 0){
         int counter = 0;
         for (int i = 0; i < input.rows(); i++){
@@ -367,7 +369,7 @@ Eigen::VectorXd polygon::find_element(Eigen::VectorXd &target, Eigen::Array<bool
 // very Stupid finding element method
 Eigen::VectorXd polygon::find_index(Eigen::Array<bool, Eigen::Dynamic, 1> &input){
     int rows = input.cast<double>().sum();
-    Eigen::VectorXd output(rows);
+    Eigen::VectorXd output = Eigen::VectorXd::Zero(rows);
     if (rows != 0){
         int counter = 0;
         for (int i = 0; i < input.rows(); i++){

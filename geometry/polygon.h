@@ -74,15 +74,15 @@ private:
     // std::random_device rd; 
 
     // The minimum values of the vertices
-    Eigen::Vector3d minXYZ;
+    Eigen::Vector3d minXYZ = Eigen::Vector3d::Zero(3);
     // The maximum values of the vertices
-    Eigen::Vector3d maxXYZ;
+    Eigen::Vector3d maxXYZ = Eigen::Vector3d::Zero(3);
 
     // Bounding box range
-    Eigen::VectorXd bb_range;
+    Eigen::VectorXd bb_range = Eigen::VectorXd::Zero(6);
 
     // Mean of the vertices
-    Eigen::Vector3d vertices_mean;
+    Eigen::Vector3d vertices_mean = Eigen::Vector3d::Zero(3);
     // A shifted vertices
     Eigen::MatrixXd vertices_shifted;
     // Volumes of each tetrahedron

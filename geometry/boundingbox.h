@@ -31,7 +31,7 @@ public:
     }
 
     // Bounding box range
-    Eigen::VectorXd bb_range;
+    Eigen::VectorXd bb_range = Eigen::VectorXd::Zero(6);
 
     // Bounding box volume
     double bb_volume;
