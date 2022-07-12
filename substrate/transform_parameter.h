@@ -11,9 +11,9 @@ public:
     double angle;
     double angle_reverse; // The rotation angle in rotate_y function
 
-    double iX = 0;
-    double iY = 0;
-    double iZ = 0;
+    int iX = 0;
+    int iY = 0;
+    int iZ = 0;
 
     bool transform_inverse = false;
 

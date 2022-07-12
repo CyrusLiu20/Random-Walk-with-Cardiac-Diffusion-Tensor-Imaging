@@ -62,7 +62,7 @@ private:
     myocytes myocytes_process;
 
     // Maximum and minimum of voxel length in y dimension
-    Eigen::Vector2d y_extent;
+    Eigen::Vector2d y_extent = Eigen::Vector2d::Zero(2);
     // Realistic y slice
     Eigen::VectorXd y_minvals;
     Eigen::MatrixXd y_slice_minmax;

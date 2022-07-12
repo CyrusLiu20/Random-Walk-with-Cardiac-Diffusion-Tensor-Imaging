@@ -148,7 +148,7 @@ intersection_info substrate::intersectMyocytes(Eigen::Vector3d &position, Eigen:
     intersection_info intersect_info;
 
     Eigen::Vector3d position_updated;
-    if (substrate_type == "block"){
+    if (substrate_type == "block" and refFrame == "global"){
         position_updated = substrate_transform.global2local(position).position_local;
     }
     else{
@@ -159,6 +159,7 @@ intersection_info substrate::intersectMyocytes(Eigen::Vector3d &position, Eigen:
     Eigen::Array<bool, Eigen::Dynamic, 1> needsChecks = substrate::needsChecking(position_updated, dxdydz, "local"); // ~(wontEnter && isOutside)
     Eigen::VectorXd checks_indices = substrate::find_index(needsChecks);
 
+// std::cout << checks_indices.transpose() << std::endl;
     for (int i = 0; i < checks_indices.rows(); i++){
         intersection_info info = myos[checks_indices(i)].intersection(position_updated, dxdydz);
 

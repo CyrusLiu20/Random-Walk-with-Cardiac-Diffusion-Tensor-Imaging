@@ -44,9 +44,10 @@ read_myocytes::read_myocytes(std::string filename){
                 break;
             }
 
+        }
+            
             // myocytes file has been successfully loaded
             flag = true;
-        }
 
     }
     else{

@@ -47,7 +47,8 @@ transform_parameter transform::global2local(Eigen::Vector3d &position){
     // position_rotated = fn_Rot(position, angle_reverse);
 
     position_rotated = transform::rotate_y(position, output.angle_reverse);
-    position_slice << position_rotated(0), std::fmod(position_rotated(1), dy), position_rotated(2);
+    // position_slice << position_rotated(0), std::fmod(position_rotated(1), dy), position_rotated(2);
+    position_slice << position_rotated(0), transform::custom_mod(position_rotated(1), dy), position_rotated(2);
 
     // Apply sin(x) displacement in z'
     double xCoord = position_slice(0);
@@ -60,7 +61,7 @@ transform_parameter transform::global2local(Eigen::Vector3d &position){
 
     // Shift axis half block to the right if iZ is odd and compute iX
     if (shift_block){
-        xCoord = xCoord - std::fmod(output.iZ, 2)*dx/2;
+        xCoord = xCoord - transform::custom_mod(output.iZ, 2)*dx/2;
     }
     output.iX = 1 + std::floor(xCoord/dx); // Compute iX like before with iY & iZ
 
@@ -77,15 +78,15 @@ transform_parameter transform::global2local(Eigen::Vector3d &position){
 // Did not use lambda functions
 // some reason dz in Matlab does not change at all
 
-Eigen::Vector3d transform::local2global(Eigen::Vector3d &pos_local, double &iX, double &iY, double &iZ){
-    double iX_new = iX - 1;
-    double iY_new = iY - 1;
-    double iZ_new = iZ - 1;
+Eigen::Vector3d transform::local2global(Eigen::Vector3d &pos_local, int &iX, int &iY, int &iZ){
+    int iX_new = iX - 1;
+    int iY_new = iY - 1;
+    int iZ_new = iZ - 1;
 
     // Translation offset
     int shift;
     if (shift_block){
-        shift = std::fmod(iZ_new+1, 2)/2;
+        shift = transform::custom_mod(iZ_new+1, 2)/2;
     }
     else{
         shift = 0;
@@ -109,7 +110,7 @@ Eigen::Vector3d transform::local2global(Eigen::Vector3d &pos_local, double &iX, 
 }
 
 Eigen::Vector3d transform::rotate_y(Eigen::Vector3d &position, double &theta){
-    Eigen::Matrix3d rotation;
+    Eigen::Matrix3d rotation = Eigen::Matrix3d::Zero(3, 3);
     rotation << std::cos(theta), 0, std::sin(theta),
                  0, 1, 0,
                 -std::sin(theta), 0, std::cos(theta);
@@ -135,11 +136,17 @@ double transform::find_yslice(double &y_position){
     }
 
     if (not(found)){
-        std::cout << "Transform::find_yslice::where', 'Corresponding slice not found'" << std::endl;
+        throw std::logic_error("Transform::find_yslice::where', 'Corresponding slice not found'");
         return -1;
     }
 
     return -1; // just in case
+}
+
+// Produce right results for positive and negative a
+double transform::custom_mod(double a, double b){
+    double output = std::fmod(a, b);
+    return output < 0 ? output + b : output;
 }
 
 // custom stupid absolute function
@@ -147,9 +154,3 @@ double transform::absolute(double &input){
     return input > 0 ? input : -input;
 }
 
-// // custom stupid vector mod function
-// Eigen::Vector3d transform::vect_mod(Eigen::Vector3d &original, Eigen::Vector3d &vector_mod){
-//     Eigen::Vector3d output;
-//     output << original(0) % vector_mod(0), original(1) % vector_mod(1), original(2) % vector_mod(2);
-//     return output;
-// }
