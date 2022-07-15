@@ -16,10 +16,10 @@ public:
     double yextent_min = -2000;
     double yextent_max = 5000;
 
-    int deg_rot_per_L_in_y = 0; // degree of rotation per unit length in y
-    double z_amplitude = 0; // amplitude in z for the sinusoidal transform
-    double x_frequency = 0; // frquency in x for the sinusoidal transform
-    bool shift_block = false;  
+    double deg_rot_per_L_in_y = 1.5; // degree of rotation per unit length in y
+    double z_amplitude = 5; // amplitude in z for the sinusoidal transform
+    double x_frequency = 5; // frquency in x for the sinusoidal transform
+    bool shift_block = true;  
 
     std::string substrate_type = ""; // This will be inputted later when scanning myocytes
 
