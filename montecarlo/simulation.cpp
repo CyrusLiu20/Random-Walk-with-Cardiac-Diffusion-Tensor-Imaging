@@ -96,7 +96,6 @@ bool simulation::seedParticlesInBox(Eigen::MatrixXd boundingboxes_input, int par
     else if(particlesPerBox_input > 0){
         particlesPerBox.resize(N_b);
         particlesPerBox = Eigen::VectorXd::Ones(N_b, 1) * particlesPerBox;
-        // Validation (to do) don't know how
     }
 
     // Check if there are still any missing particles
@@ -317,6 +316,7 @@ particle_state simulation::onewalker(sequence &sequence_input, substrate &substr
         catch (const std::exception &ex){
             const char* error_message = ex.what();
             if (error_message == "Polyhedron:intersection:uncertain', 'Too close to edge/vertex/face" or error_message == "ParticleWalker:one_dt:unfinished, Step has not finished after 50 substeps"){
+                // std::cout << ex.what() << std::endl;
                 step_success = false;
             }
             else{
