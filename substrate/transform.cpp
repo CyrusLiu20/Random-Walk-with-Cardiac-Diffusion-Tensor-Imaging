@@ -34,6 +34,9 @@ transform_parameter transform::global2local(Eigen::Vector3d &position){
         output.angle_reverse = -output.angle;
     }
 
+// std::cout << "Y_slice : " << y_slice << std::endl;
+// std::cout << "angle : " << output.angle << std::endl;
+ 
     // Rotate position
     Eigen::Vector3d position_rotated, position_slice; 
     
@@ -84,7 +87,7 @@ Eigen::Vector3d transform::local2global(Eigen::Vector3d &pos_local, int &iX, int
     int iZ_new = iZ - 1;
 
     // Translation offset
-    int shift;
+    double shift;
     if (shift_block){
         shift = transform::custom_mod(iZ_new+1, 2)/2;
     }

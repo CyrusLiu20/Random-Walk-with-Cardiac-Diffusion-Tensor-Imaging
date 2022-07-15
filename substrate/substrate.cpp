@@ -227,7 +227,6 @@ Eigen::VectorXd substrate::find_index(Eigen::Array<bool, Eigen::Dynamic, 1> &inp
     return output;
 }
 
-
 // Stupid way to implement iteration (to calculate y_minval and y_slice_minmax)
 Eigen::VectorXd substrate::iteration(double a, double b, double step){    
     Eigen::VectorXd output;

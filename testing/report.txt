@@ -1,5 +1,5 @@
 Random Walk for cardiac Diffusion Tensor Imaging
-Number of particles simulated : 250
+Number of particles simulated : 50
 Errors computing particle positions : 0
 Errors computing particle phase : 0
 Errors computing particle myocytes : 0
