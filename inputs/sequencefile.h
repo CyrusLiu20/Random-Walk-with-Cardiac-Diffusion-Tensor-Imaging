@@ -2,7 +2,7 @@
 #define SEQUENCEFILE_H
 
 #include <cstdio>
-
+#include <string>
 class sequencefile{
 
 public:

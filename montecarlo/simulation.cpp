@@ -1,6 +1,7 @@
 #include <cstdio>
 #include <iostream>
 #include <stdlib.h>
+#include <matio.h>
 
 // header file
 #include "simulation.h"
@@ -194,34 +195,40 @@ bool simulation::seeding(){
 
 void simulation::performScan(sequence sequence_input, substrate substrate_input){
 
-    // sequence_simulation = sequence_input; // no resource equal operator built
-    // substrate_simulation = substrate_input;
-
     // perform the scan using the provided sequence in the provided substrate
-    particle_states.resize(obj.get_N_p());
+    int number_of_particles = obj.get_N_p();
+    particle_states.resize(number_of_particles);
+    // position_histories.resize(number_of_particles);
+    // phase_histories.resize(number_of_particles);
+    // simulation::create_initial_states(number_of_particles);
     // loop over all particles (all independent, thus parallel)
-
     Eigen::Vector3d position_i, phase_i;
 
-    int number_of_particles = obj.get_N_p();
     omp_set_num_threads(number_of_particles);
     #pragma omp parallel private(phase_i, position_i, unit_test)
     #pragma omp for
     for (int i_particle = 0; i_particle < number_of_particles; i_particle++){
-            position_i = obj.position(i_particle, Eigen::all);
-            phase_i = obj.phase(i_particle, Eigen::all);
-            particle_states[i_particle] = simulation::onewalker(sequence_input, substrate_input, i_particle, position_i, phase_i, obj.flag(i_particle));
-            // std::cout << particle_states[i_particle].position.transpose() << std::endl;
+        #pragma omp critical
+        position_i = obj.position(i_particle, Eigen::all);
+        phase_i = obj.phase(i_particle, Eigen::all);
+        particle_states[i_particle] = simulation::onewalker(sequence_input, substrate_input, i_particle, position_i, phase_i, obj.flag(i_particle));
+        // simulation::save_history();
     }    
 
     #pragma omp barrier
+
+    std::cout << "Simulation ended" << std::endl;
+    simulation::save_history();
 }
 
 // The simualtion of one particle, position, phase, and the flag is the state of that one particle
 particle_state simulation::onewalker(sequence &sequence_input, substrate &substrate_input, int i_particle, Eigen::Vector3d position_input, Eigen::Vector3d phase_input, bool flag){
-    // std::cout << "One walker : " << i_particle << std::endl;
-
     particle_state one_particle_state;
+
+    // Initialize state history
+    one_particle_state.position_history = Eigen::MatrixXd::Zero(sequence_input.N, 4);
+    one_particle_state.phase_history = Eigen::MatrixXd::Zero(sequence_input.N, 3);
+
     int myoindex = -1;
 
     // Different psuedo number generator : please be careful
@@ -260,11 +267,11 @@ particle_state simulation::onewalker(sequence &sequence_input, substrate &substr
         double dt = sequence_input.get_dt(i);
         Eigen::VectorXd gG = sequence_input.get_gG(i); // It may be 1D or 3D
 
-        // std::cout << "gG transpose : " << gG.transpose() << std::endl;
         // phase
         if (gG.rows() == 1){
             phase = phase + (position*gG(0)*dt);
-
+            // one_particle_state.phase_history(i, Eigen::all) = phase.transpose();
+            one_particle_state.phase_history(i, Eigen::all) << phase(0), phase(1), phase(2);
             // obj.phase(i_particle, Eigen::all) = (position_debug.array()*gG(0)*dt);
         }
         else if(gG.rows() == 3){
@@ -274,6 +281,7 @@ particle_state simulation::onewalker(sequence &sequence_input, substrate &substr
         else{
             std::cout << "Wrong matrix size" << std::endl;
         }
+    
 
         // try step until success
         int counter = 0;
@@ -288,29 +296,14 @@ particle_state simulation::onewalker(sequence &sequence_input, substrate &substr
                     break;
                 }
 
-                // try{
-                    // if (i == 225){
-                    //     std::cout << "Time step : " << i << std::endl;
-                    //     std::cout << "Duck" << std::endl;
-                    // }
-                    Eigen::VectorXd position_raw = simulation::one_dt(position, dt, substrate_input, myoindex, i_particle, i);
-                    // std::cout << i << std::endl;
-                    // printf("One walker position raw : %lf, %lf, %lf\n", position_raw(0), position_raw(1), position_raw(2));                   
-                    // if (i == 1499){
+                Eigen::VectorXd position_raw = simulation::one_dt(position, dt, substrate_input, myoindex, i_particle, i);
+                position = position_raw({0,1,2});
+                myoindex = position_raw(3);
 
+                // one_particle_state.position_history(i, Eigen::all) = position_raw.transpose();
+                one_particle_state.position_history(i, Eigen::all) << position_raw(0), position_raw(1), position_raw(2), position_raw(3);
+                step_success = true;
 
-
-                    //     std::cout << "Duck" << std::endl;
-                    // }
-                    position = position_raw({0,1,2});
-                    myoindex = position_raw(3);
-                    step_success = true;
-
-                // }
-                // catch (const std::exception &ex){
-                //     // std::cout << ex.what() << std::endl;
-                //     throw;
-                // }
             }
         }
         catch (const std::exception &ex){
@@ -608,6 +601,55 @@ void simulation::load_test_module(testing test){
     unit_test = test;
     debugging = true;
     std::cout << "Please be alert : debugging mode activated" << std::endl;
+}
+
+void simulation::save_history(){
+    mat_t *intermediate = NULL;
+    intermediate = Mat_CreateVer("intermediate_steps.mat", NULL, MAT_FT_MAT5);
+    const char *structname = "histories";
+    const char *fieldnames[2] = { "position", "phase"};
+    size_t structdim[2] = { 1, (long long unsigned int)obj.get_N_p() }; // create 1 x n struct
+    //main struct: Data with 2 fields
+    matvar_t* matstruct = Mat_VarCreateStruct(structname, 2, structdim, fieldnames, 2); 
+    for (int i_particle = 0; i_particle < obj.get_N_p(); i_particle++){
+        // int i_particle = 9;
+        size_t pos_dim[2] = {(long long unsigned int)particle_states[i_particle].position_history.rows(), (long long unsigned int)particle_states[i_particle].position_history.cols() }; //string dimension
+        double *pos = particle_states[i_particle].position_history.data();
+        matvar_t *pos_variable = Mat_VarCreate(fieldnames[0], MAT_C_DOUBLE, MAT_T_DOUBLE, 2, pos_dim, pos, 0);
+        Mat_VarSetStructFieldByName(matstruct, fieldnames[0] ,i_particle, pos_variable); //insert Data(p).name (1 <= p <= n)
+    
+        size_t phase_dim[2] = {(long long unsigned int)particle_states[i_particle].phase_history.rows(), (long long unsigned int)particle_states[i_particle].phase_history.cols() }; //string dimension
+        double *phase = particle_states[i_particle].phase_history.data();
+        matvar_t *phase_variable = Mat_VarCreate(fieldnames[1], MAT_C_DOUBLE, MAT_T_DOUBLE, 2, phase_dim, phase, 0);
+        Mat_VarSetStructFieldByName(matstruct, fieldnames[1] ,i_particle, phase_variable); //insert Data(p).name (1 <= p <= n)
+
+    }
+    Mat_VarWrite(intermediate, matstruct, MAT_COMPRESSION_NONE);
+    Mat_Close(intermediate);
+    Mat_VarFree(matstruct);
+}
+
+
+void simulation::create_initial_states(long long unsigned int number_of_particles){
+    const char *filename = "intermediate_steps.mat";
+    mat_t *intermediate = NULL; //matfp contains pointer to MAT file or NULL on failure
+    intermediate = Mat_CreateVer(filename, NULL, MAT_FT_MAT5); //or MAT_FT_MAT4 / MAT_FT_MAT73
+
+    //Create a 1 x n struct 'Data' with fields: name, unit, value
+    const char *structname = "histories";
+    const char *fieldnames[2] = {"position","phase" };
+    size_t structdim[2] = { 1, number_of_particles }; // create 1 x n struct
+
+    //main struct: Data with 2 fields
+    matvar_t* matstruct = Mat_VarCreateStruct(structname, 2, structdim, fieldnames, 2); 
+    // char* mystring = "Speed";
+    // size_t dim[2] = { 1, 5 }; //string dimension
+    // matvar_t *variable = Mat_VarCreate(fieldnames[0], MAT_C_CHAR, MAT_T_UTF8, 2, dim, mystring, 0);
+    // Mat_VarSetStructFieldByName(matstruct, fieldnames[0], p, variable); //insert Data(p).name (1 <= p <= n)
+    Mat_VarWrite(intermediate, matstruct, MAT_COMPRESSION_NONE);
+    Mat_VarFree(matstruct);
+
+    Mat_Close(intermediate);
 }
 
 

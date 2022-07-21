@@ -1,8 +1,8 @@
 #ifndef MONTECARLOFILE_H
 #define MONTECARLOFILE_H
 
-// #include <eigen3/Eigen/Dense>
-
+#include <eigen3/Eigen/Dense>
+#include <string>
 class montecarlofile{
 
 public:
@@ -15,9 +15,9 @@ public:
 	~montecarlofile() = default;
 
     // Initial seed for the random number generator
-    unsigned int rngseed = 912;
+    unsigned int rngseed = 102;
     // Number of walkers
-    int N_p = 50;
+    int N_p = 211;
 
     // stepping type used in the simulation
     std::string stepType = "constant";

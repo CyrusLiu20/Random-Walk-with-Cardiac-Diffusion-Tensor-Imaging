@@ -1,6 +1,7 @@
 #ifndef TRANSFORM_PARAMETER_H
 #define TRANSFORM_PARAMETER_H
 
+#include <eigen3/Eigen/Dense>
 class transform_parameter{
 
 public:

@@ -1,3 +1,4 @@
+#include <iostream>
 #include "process_signal.h"
 #include "complex.h"
 #include <eigen3/unsupported/Eigen/MatrixFunctions>

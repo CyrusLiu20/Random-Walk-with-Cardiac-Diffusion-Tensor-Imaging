@@ -1,6 +1,7 @@
 #ifndef TESTING_H
 #define TESTING_H
 
+#include <matio.h>
 #include "../montecarlo/particle_state.h"
 #include <fstream>
 #include <eigen3/Eigen/Dense>

@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <iostream>
 #include "substrate.h"
 
 substrate::substrate(substratefile substrate){

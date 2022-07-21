@@ -2,6 +2,7 @@
 #define SUBSTRATE_H
 
 #include "myocytes.h"
+#include "../inputs/substratefile.h"
 #include "../geometry/polygon.h"
 #include "../geometry/intersection_info.h"
 #include "../substrate/transform.h"

@@ -1,7 +1,10 @@
 #ifndef SIMULATION_H
 #define SIMULATION_H
 
+#include <eigen3/Eigen/Dense>
+#include <matio.h>
 #include "walkers.h"
+#include "../substrate/substrate.h"
 #include "../MRI/sequence.h"
 #include "../montecarlo/particle_state.h"
 #include "../geometry/polygon.h"
@@ -36,16 +39,21 @@ public:
 
 private:
 
+    // Creates a history file for particle position and phase
+    void create_initial_states(long long unsigned int number_of_particles);
+    // void save_history(Eigen::MatrixXd position, Eigen::MatrixXd phase, int i_particle);
+    void save_history();
+
     // Compute the normal distance
     Eigen::Vector3d reflect(Eigen::Vector3d &oldstep, Eigen::MatrixXd &faceVertices);
     double computeNormalDistance(Eigen::MatrixXd &faceVertices, Eigen::Vector3d &step);
 
-    // History of all the particles position, phase, and flag
+    // Final states of all the particles (position, phase, and flag)
     std::vector<particle_state> particle_states;
-    // The sequence and the substrate used in this simulation
-    // sequence sequence_simulation; // operator not yet built
-    // substrate substrate_simulation;
 
+    // The history of each particle in each time step
+    // std::vector<Eigen::MatrixXd> position_histories;
+    // std::vector<Eigen::MatrixXd> phase_histories;
 
     // Random seed
     std::random_device rd;   
@@ -81,6 +89,7 @@ private:
     // Total box volumes
     double total_boxVolume;
 
+    mat_t *intermediate;
 
     // For debugging purposes
     testing unit_test;

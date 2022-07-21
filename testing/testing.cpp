@@ -1,4 +1,5 @@
 #include "testing.h"
+#include <iostream>
 #include <cmath>
 
 testing::testing(std::string filename){

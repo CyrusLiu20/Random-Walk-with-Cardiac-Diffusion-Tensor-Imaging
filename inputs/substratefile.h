@@ -1,6 +1,8 @@
 #ifndef SUBSTRATEFILE_H
 #define SUBSTRATEFILE_H
 
+#include <eigen3/Eigen/Dense>
+#include <string>
 class substratefile{
 
 public:
@@ -17,9 +19,9 @@ public:
     double yextent_max = 5000;
 
     double deg_rot_per_L_in_y = 1.5; // degree of rotation per unit length in y
-    double z_amplitude = 5; // amplitude in z for the sinusoidal transform
-    double x_frequency = 5; // frquency in x for the sinusoidal transform
-    bool shift_block = true;  
+    double z_amplitude = 0; // amplitude in z for the sinusoidal transform
+    double x_frequency = 0; // frquency in x for the sinusoidal transform
+    bool shift_block = false;  
 
     std::string substrate_type = ""; // This will be inputted later when scanning myocytes
 
@@ -44,11 +46,11 @@ public:
 
     // Transit model and permeability for the membranes
     std::string transit_model = "HybridModel"; // Type of model
-    double permeability = 0.23;
+    double permeability = 0.5;
     // Compartment specific diffusivity
     // Diffusitivity
-    double D_ics = 0.5; // Intra-cellular diffusivity
-    double D_ecs = 5.5; // Extra-cellular diffusivity
+    double D_ics = 1.5; // Intra-cellular diffusivity
+    double D_ecs = 2.5; // Extra-cellular diffusivity
 
 
     //Dimension

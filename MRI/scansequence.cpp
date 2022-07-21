@@ -1,5 +1,7 @@
 #include <cmath>
 #include <iostream>
+#include "../inputs/sequencefile.h"
+#include "sequence.h"
 #include "scansequence.h"
 
 sequence ScanSequence::Scan(Eigen::VectorXd dt_input, Eigen::MatrixXd gG_input){

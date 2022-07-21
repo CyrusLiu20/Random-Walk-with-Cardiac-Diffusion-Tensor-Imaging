@@ -1,8 +1,9 @@
 #ifndef WALKERS_H
 #define WALKERS_H
 
-// #include <eigen3/Eigen/Dense>
-// #include "montecarlofile.h"
+#include <eigen3/Eigen/Dense>
+#include <string>
+#include "../inputs/montecarlofile.h"
 
 class walkers{
 
