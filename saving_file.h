@@ -4,6 +4,7 @@
 #include <matio.h>
 #include <eigen3/Eigen/Dense>
 #include <vector>
+#include "MRI/process_signal.h"
 #include "montecarlo/particle_state.h"
 class saving_file{
 

@@ -12,47 +12,43 @@
 #include "inputs/sequencefile.h"
 #include "inputs/substratefile.h"
 
-// #include "inputs_pgse/montecarlofile.h"
-// #include "inputs_pgse/sequencefile.h"
-// #include "inputs_pgse/substratefile.h"
-
 // Substrate
-#include "substrate/read_myocytes.h"
+// #include "substrate/read_myocytes.h"
 #include "substrate/myocytes.h"
-#include "substrate/substrate.h"
-#include "substrate/transform.h"
+// #include "substrate/substrate.h"
+// #include "substrate/transform.h"
 #include "substrate/transform_parameter.h"
 
 // Monte Carlo
-#include "montecarlo/walkers.h"
+// #include "montecarlo/walkers.h"
 #include "montecarlo/simulation.h"
 #include "montecarlo/particle_state.h"
 
 // MRI
 #include "MRI/sequence.h"
 #include "MRI/scansequence.h"
-#include "MRI/process_signal.h"
+// #include "MRI/process_signal.h"
 
 // Geometry
-#include "geometry/polygon.h"
+// #include "geometry/polygon.h"
 #include "geometry/boundingbox.h"
 #include "geometry/intersection_ray_info.h"
 #include "geometry/intersection_info.h"
 
 // Testing
-#include "testing/testing.h"
+// #include "testing/testing.h"
 
 // CPP files VScode debugging use
 #include "saving_file.h."
-#include "substrate/read_myocytes.cpp"
-#include "montecarlo/walkers.cpp"
+// #include "substrate/read_myocytes.cpp"
+// #include "montecarlo/walkers.cpp"
 #include "montecarlo/simulation.cpp"
 #include "MRI/scansequence.cpp"
-#include "MRI/process_signal.cpp"
-#include "substrate/substrate.cpp"
-#include "substrate/transform.cpp"
-#include "geometry/polygon.cpp"
-#include "testing/testing.cpp"
+// #include "MRI/process_signal.cpp"
+// #include "substrate/substrate.cpp"
+// #include "substrate/transform.cpp"
+// #include "geometry/polygon.cpp"
+// #include "testing/testing.cpp"
 
 
 int main(int argc, char *argv[]){
@@ -133,7 +129,8 @@ int main(int argc, char *argv[]){
 
     auto begin_simulation = std::chrono::steady_clock::now();
     std::cout << "Random Walk for cardiac Diffusion Tensor Imaging" << std::endl;
-    std::cout << "Simulation start" << std::endl;
+    std::cout << "Simulation of " << particles.get_N_p() << " particles starts" << std::endl;
+    
     system.performScan(sequence, substrate);
     auto finish_simulation = std::chrono::steady_clock::now();
 
@@ -151,7 +148,7 @@ int main(int argc, char *argv[]){
     // Save results
     saving_file result(states, pos0, post_processing);
     // saving_file result(states, unit_test.initial_positions, post_processing); // Debugging use
-
+    
     printf("Simulation time (perform scan) : %lf (seconds)\n", run_time_simulation);
     printf("Total simulation time : %lf (seconds)\n", run_time_total);
 
