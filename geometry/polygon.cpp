@@ -1,4 +1,6 @@
 #include "polygon.h"
+#include <iostream>
+#include <random>
 
 polygon::polygon(Eigen::MatrixXd vertices_input, Eigen::MatrixXd faces_input){
 
