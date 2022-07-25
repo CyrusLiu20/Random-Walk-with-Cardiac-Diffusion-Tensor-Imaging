@@ -21,5 +21,5 @@ Simulation of 500 particles
 ![](pics/Distribution.PNG)
 
 # Original paper
- https://doi.org/10.1002/mrm.27561
+ 1. https://doi.org/10.1002/mrm.27561
 
