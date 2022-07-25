@@ -18,7 +18,7 @@ make
 To change the diffusion configuration, please see the three input files in the input folder (montecarlofile, sequencefile, and substratefile)
 # Sample
 Simulation of 500 particles
-![](pics/distribution.png)
+![](pics/Distribution.png)
 
 # Original paper
  https://doi.org/10.1002/mrm.27561
