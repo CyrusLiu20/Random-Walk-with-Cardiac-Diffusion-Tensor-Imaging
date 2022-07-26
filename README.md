@@ -15,7 +15,7 @@ make
 ``` 
 ./run_sim.exe
 ```
-To change the diffusion configuration, please see the three input files in the input folder (montecarlofile, sequencefile, and substratefile)
+To change the diffusion configuration, please see the three input files in the input folder (montecarlofile, sequencefile, and substratefile),  please also ensure you have these external libraries installed (Eigen and Matio).
 # Sample
 Simulation of 500 particles
 ![](pics/Distribution.PNG)
