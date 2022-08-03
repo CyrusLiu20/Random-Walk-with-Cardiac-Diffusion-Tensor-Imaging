@@ -96,7 +96,6 @@ bool polygon::containsPoint(Eigen::Vector3d &point, unsigned int &seed){
     // intersects the faces of the polyhedron an odd number of times.
 
     if (not((point.array() >= minXYZ.array()) and (point.array() <= maxXYZ.array())).all()){
-    // if (not((point.array() >= minXYZ.array()).all() and (point.array() <= maxXYZ.array()).all())){
         return false;
     }
 
@@ -128,7 +127,6 @@ bool polygon::containsPoint(Eigen::Vector3d &point, unsigned int &seed){
         }
 
         // determine ray
-        // std::mt19937 gen(rd());
         std::uniform_real_distribution<> direction(0, 1);
         Eigen::Vector3d dir;
         dir << direction(gen), direction(gen), direction(gen); // three random variables from
@@ -137,14 +135,10 @@ bool polygon::containsPoint(Eigen::Vector3d &point, unsigned int &seed){
         dir = dir*maxdist*10; // long enough to fully pass through polyhedron
 
         // compute intersections and test
-        // Eigen::Vector3d dir_debug;
-        // dir_debug << 417.385807530152	,91.0704977246554	,-474.300439156235; // Please remember to remove this
         intersection_ray_info ray = polygon::TriangleRayIntersection(point, dir);
-        // intersection_ray_info ray = polygon::TriangleRayIntersection(point, dir_debug);
         int nIntersects = ray.intersect.cast<double>().sum(); // Number of intersections
         odd = nIntersects % 2 > 0; // inside if odd
 
-        // std::cout << ray.intersect.transpose() << std::endl;
         // make sure ray stays away fron surface triangle edges
         certain = polygon::intersection_is_certain(ray, false, 1e-6);
     
@@ -166,7 +160,6 @@ intersection_info polygon::intersection(Eigen::Vector3d &orig, Eigen::Vector3d &
     }
 
     intersection_ray_info ray = polygon::TriangleRayIntersection(orig, dir);
-    // if ((ray.intersect.any())){
     if (not(ray.intersect.any())){
         return output;
     }
@@ -205,7 +198,6 @@ intersection_info polygon::intersection(Eigen::Vector3d &orig, Eigen::Vector3d &
     return output;
 }
 
-// This is too slow!!!!!!
 void polygon::surface_compute(Eigen::MatrixXd &vertices_input, Eigen::MatrixXd &faces_input){
 
     // Initialize area
@@ -302,7 +294,9 @@ intersection_ray_info polygon::TriangleRayIntersection(Eigen::Vector3d &point, E
     Eigen::VectorXd det = (edge1.array()*pvec.array()).rowwise().sum(); // determinant of the matrix M = dot(edge1, pvec)
 
     // find faces parallel to the ray
-    Eigen::Array<bool, Eigen::Dynamic, 1> angleOK = (det.array().abs2() > eps).array(); // if det ~ 0 then ray lies in the triangle plane   
+    // Eigen::Array<bool, Eigen::Dynamic, 1> angleOK = (det.array().abs2() > eps).array(); // if det ~ 0 then ray lies in the triangle plane   
+    Eigen::Array<bool, Eigen::Dynamic, 1> angleOK = (det.array().abs() > eps).array(); // if det ~ 0 then ray lies in the triangle plane   
+
     if ((angleOK == false).all()){
         printf("polygon::TriangleRayIntersection::angle not within tolerance\n");
         return output;
@@ -315,13 +309,14 @@ intersection_ray_info polygon::TriangleRayIntersection(Eigen::Vector3d &point, E
     output.t = (edge2.array()*qvec.array()).rowwise().sum().array()/det.array();
 
     // test if line/plane intersection is within the triangle
-    Eigen::Array<bool, Eigen::Dynamic, 1> ok = (angleOK and (output.u.array() > -zero).array() and (output.v.array() > -zero).array() and ((output.u + output.v).array() <= 1+zero).array());
+    Eigen::Array<bool, Eigen::Dynamic, 1> ok = (angleOK and (output.u.array() >= -zero).array() and (output.v.array() >= -zero).array() and ((output.u + output.v).array() <= 1.0+zero).array());
     // std::cout << ok.cast<double>().sum() << std::endl;
-    output.intersect = (ok and (output.t.array()>=-zero).array() and (output.t.array() <= 1+zero).array());
+    output.intersect = (ok and (output.t.array()>=-zero).array() and (output.t.array() <= 1.0+zero).array());
 
     return output;
 }
 
+// Matrix cross product of every row of a and b
 Eigen::MatrixXd polygon::crossMat(Eigen::MatrixXd &a, Eigen::MatrixXd &b){
     Eigen::MatrixXd output = Eigen::MatrixXd::Zero(a.rows(), 3);
     for (int i = 0; i < a.rows(); i++){

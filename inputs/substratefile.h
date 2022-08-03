@@ -46,7 +46,7 @@ public:
 
     // Transit model and permeability for the membranes
     std::string transit_model = "HybridModel"; // Type of model
-    double permeability = 0.5;
+    double permeability = 0.1;
     // Compartment specific diffusivity
     // Diffusitivity
     double D_ics = 1.5; // Intra-cellular diffusivity

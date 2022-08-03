@@ -10,9 +10,9 @@ simulation::simulation(walkers obj_input){
     obj = obj_input;
 }
 
+// Initializes position, phase and flag and generates the position uniformly
 bool simulation::seedParticlesInBox(Eigen::MatrixXd boundingboxes_input, int particlesPerBox_input = -1){
     bool flag = true;
-
 
     // Initialize Mersenne Twister pseudo-random number generator
     // std::mt19937 gen(rd());
@@ -22,8 +22,6 @@ bool simulation::seedParticlesInBox(Eigen::MatrixXd boundingboxes_input, int par
     cols = (int)boundingboxes_input.cols();
     // Obtain the number of bounding boxes
     N_b = (int)boundingboxes_input.rows();
-
-    // printf("Number of rows : %d ; Number of columns : %d\n", N_b, cols);
 
     // initialization of matrices and vectors
     if (not(simulation::initialize(N_b))){
@@ -49,20 +47,14 @@ bool simulation::seedParticlesInBox(Eigen::MatrixXd boundingboxes_input, int par
             flag = false;               
     }
 
-    // std::cout << "The updated bounding boxes : " << std::endl << boundingboxes << std::endl;
-
     // Check bounding box inconsistentcy
     for (int i = 0; i < N_b; i ++){
         bool inconsistent = (boundingboxes(i,0) > boundingboxes(i,1) or boundingboxes(i,2) > boundingboxes(i,3) or boundingboxes(i,4) > boundingboxes(i,5));
-        // printf("Testing : inconsistency : %s\n", inconsistent ? "true" : "false");
         if (inconsistent){
             printf("ParticleWalker:seedParticlesInBox:inconsistent, BBs must be [[xmin;xmax;ymin;ymax;zmin;zmax]]\n");
             flag = false;
         }
     }
-
-    // Check overlap
-    // To do
 
     if (particlesPerBox_input == -1){
         // Calculate the side lengths of bounding boxes
@@ -77,7 +69,6 @@ bool simulation::seedParticlesInBox(Eigen::MatrixXd boundingboxes_input, int par
             printf("simulation::seedParticlesInBox::inconsistent, each dimension must be either zero or non-zero across all boxes");
             flag = false;
         }
-        // printf("Testing : Zero dimension : %s\n", hasZeroDim ? "true" : "false");
 
         // Removing zero dimensions (?????)
         sidelengths = sidelengths_raw(Eigen::all, Eigen::seqN(0, dimension));
@@ -105,15 +96,6 @@ bool simulation::seedParticlesInBox(Eigen::MatrixXd boundingboxes_input, int par
         printf("simulation::seedParticlesInBox::missing_particles, please check your preliminary particles number");
         flag = false;
     }
-    else{
-        // printf("Testing : Missing particles : Passed\n");
-    }
-
-    // std::cout << "The updated sidelengths : " << std::endl << sidelengths << std::endl;
-    // std::cout << "The box volumes : " << boxVolumes.transpose() << std::endl;
-    // std::cout << "The total box volume : " << total_boxVolume << std::endl;
-    // std::cout << "The theoretical particles per box : " << particlesPerBox_theo.transpose() << std::endl;
-    // std::cout << "The particles per box : " << particlesPerBox.transpose() << std::endl;
 
     // Seeding particles in bounding boxes
     if (not(simulation::seeding())){
@@ -181,7 +163,6 @@ bool simulation::seeding(){
         std::uniform_real_distribution<> y_interval(boundingBox(2), boundingBox(3));
         std::uniform_real_distribution<> z_interval(boundingBox(4), boundingBox(5));
 
-
         for (int j = index_first; j < index_last; j++){
 
             obj.position(j, 0) = x_interval(gen);
@@ -234,9 +215,6 @@ particle_state simulation::onewalker(sequence &sequence_input, substrate &substr
     // Different psuedo number generator : please be careful
     std::mt19937 gen(obj.get_rng_seed());
 
-    // Eigen::Vector3d position_debug; // To be removed
-    // position_debug << 459.572626877480	,122.515217206226	,66.2432912305783;
-
     Eigen::Vector3d phase = phase_input;
     Eigen::Vector3d position = Eigen::Vector3d::Zero(3);
     if (not(debugging)){
@@ -250,7 +228,6 @@ particle_state simulation::onewalker(sequence &sequence_input, substrate &substr
 
     // To Do : implement try catch error control
     try{
-        // myoindex = substrate_input.findMyocyte(position, obj.get_rng_seed(), "global");
         myoindex = substrate_input.findMyocyte(position, obj.get_rng_seed(), "global");
 
     }
@@ -261,6 +238,7 @@ particle_state simulation::onewalker(sequence &sequence_input, substrate &substr
     }
 
     Eigen::Vector3d position_new;
+    // To do: maybe a catch to break the for loop?
     for (int i = 0; i < sequence_input.N; i++){
 
         // get sequence step values
@@ -286,9 +264,9 @@ particle_state simulation::onewalker(sequence &sequence_input, substrate &substr
         // try step until success
         int counter = 0;
         bool step_success = false;
-        try{
-            while (not(step_success)){
-                // std::cout <<"Counter : " << counter << std::endl;
+        while (not(step_success)){        
+            try{
+
                 counter++;
                 if (counter > 50){
                     std::cout << "One walker : Counter over 50" << std::endl;
@@ -305,23 +283,28 @@ particle_state simulation::onewalker(sequence &sequence_input, substrate &substr
                 step_success = true;
 
             }
-        }
-        catch (const std::exception &ex){
-            const char* error_message = ex.what();
-            if (error_message == "Polyhedron:intersection:uncertain', 'Too close to edge/vertex/face" or error_message == "ParticleWalker:one_dt:unfinished, Step has not finished after 50 substeps"){
-                // std::cout << ex.what() << std::endl;
-                step_success = false;
+            catch (const std::exception &ex){
+                std::string error_message = ex.what();
+                if (error_message.find("Polyhedron:intersection:uncertain") != std::string::npos or error_message.find("ParticleWalker:one_dt:unfinished") != std::string::npos){
+                // if (error_message == "Polyhedron:intersection:uncertain', 'Too close to edge/vertex/face\n" or error_message == "ParticleWalker:one_dt:unfinished, Step has not finished after 50 substeps"){
+                    position = one_particle_state.position_history(i-1, {0, 1, 2});
+                    myoindex = one_particle_state.position_history(i-1, 3);
+                    step_success = false;
+                }
+                else{
+                    // To do ： Sorting error exceptions
+                    // std::cout << ex.what() << std::endl;
+                    obj.flag(i_particle) = 1;
+                    step_success = true; // Don't deal with this particle
+                    break;
+                }
             }
-            else{
-                // To do ： Sorting error exceptions
-                std::cout << ex.what() << std::endl;
-                obj.flag(i_particle) = 1;
-                step_success = true; // Don't deal with this particle
-                break;
-            }
         }
+
+
     }
 
+    // Storing the final state
     one_particle_state.phase = phase;
     one_particle_state.position = position;
     one_particle_state.flag = obj.flag(i_particle);
@@ -330,12 +313,15 @@ particle_state simulation::onewalker(sequence &sequence_input, substrate &substr
     return one_particle_state;
 }
 
+// One time step
 Eigen::VectorXd simulation::one_dt(Eigen::Vector3d &position, double &dt, substrate &substrate_input, int &myoindex, int &i_particle, int &timestep){
     Eigen::VectorXd output = Eigen::VectorXd::Zero(4);;
     double maxStepLength = 5;
     std::mt19937 gen(rd());
 
     Eigen::Vector3d dxdydz_normaldistrib = Eigen::Vector3d::Zero(3);
+    
+    // Generates the direction of the particle
     if (not(debugging)){
         dxdydz_normaldistrib = simulation::getLimitedSteps(substrate_input.dim, maxStepLength);
     }
@@ -519,7 +505,7 @@ Eigen::Vector3d simulation::getLimitedSteps(std::string &dim, double &maxStepLen
 
     std::mt19937 gen(rd());
     std::uniform_real_distribution<> choiceVector(-1, 1);
-    std::normal_distribution<double> normal(-1, 1);
+    std::normal_distribution<double> normal(0, 1);
 
     while (needUpdate){
         // check
@@ -531,11 +517,14 @@ Eigen::Vector3d simulation::getLimitedSteps(std::string &dim, double &maxStepLen
 
         // Dimensions must be in suquencial order x, y, z
         int dimension = dim.size();
+
+        // Constant time step creates either 1 or -1 value 
         if (obj.get_steptype() == "constant"){
             for (int i = 0; i < dimension; i++){
                 dxdydz(i) = choiceVector(gen) > 0 ? 1 : -1;
             }
         }
+        // A standard normal distribution
         else if(obj.get_steptype() == "normal"){
             for (int i = 0; i < dimension; i++){
                 dxdydz(i) = normal(gen);
@@ -549,6 +538,7 @@ Eigen::Vector3d simulation::getLimitedSteps(std::string &dim, double &maxStepLen
     return dxdydz;
 }
 
+// When a particle hits a boundary and does not pass through
 Eigen::Vector3d simulation::reflect(Eigen::Vector3d &oldstep, Eigen::MatrixXd &faceVertices){
     Eigen::Vector3d V1 = faceVertices(0, Eigen::all);
     Eigen::Vector3d V2 = faceVertices(1, Eigen::all);
@@ -569,6 +559,7 @@ Eigen::Vector3d simulation::reflect(Eigen::Vector3d &oldstep, Eigen::MatrixXd &f
     return new_step;
 }
 
+// Normal distance to the boundary
 double simulation::computeNormalDistance(Eigen::MatrixXd &faceVertices, Eigen::Vector3d &step){
     Eigen::Vector3d V1 = faceVertices(0, Eigen::all);
     Eigen::Vector3d V2 = faceVertices(1, Eigen::all);
@@ -603,6 +594,7 @@ void simulation::load_test_module(testing test){
     std::cout << "Please be alert : debugging mode activated" << std::endl;
 }
 
+// Save the particle trajectory of all particles
 void simulation::save_history(){
     mat_t *intermediate = NULL;
     intermediate = Mat_CreateVer("intermediate_steps.mat", NULL, MAT_FT_MAT5);
@@ -629,7 +621,6 @@ void simulation::save_history(){
     Mat_VarFree(matstruct);
 }
 
-
 void simulation::create_initial_states(long long unsigned int number_of_particles){
     const char *filename = "intermediate_steps.mat";
     mat_t *intermediate = NULL; //matfp contains pointer to MAT file or NULL on failure
@@ -642,16 +633,13 @@ void simulation::create_initial_states(long long unsigned int number_of_particle
 
     //main struct: Data with 2 fields
     matvar_t* matstruct = Mat_VarCreateStruct(structname, 2, structdim, fieldnames, 2); 
-    // char* mystring = "Speed";
-    // size_t dim[2] = { 1, 5 }; //string dimension
-    // matvar_t *variable = Mat_VarCreate(fieldnames[0], MAT_C_CHAR, MAT_T_UTF8, 2, dim, mystring, 0);
-    // Mat_VarSetStructFieldByName(matstruct, fieldnames[0], p, variable); //insert Data(p).name (1 <= p <= n)
     Mat_VarWrite(intermediate, matstruct, MAT_COMPRESSION_NONE);
     Mat_VarFree(matstruct);
 
     Mat_Close(intermediate);
 }
 
+// Data retrieval
 
 Eigen::MatrixXd simulation::get_position(){
     return obj.position;

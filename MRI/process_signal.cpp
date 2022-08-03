@@ -4,7 +4,10 @@
 #include <eigen3/unsupported/Eigen/MatrixFunctions>
 #include <eigen3/Eigen/LU>
 
+// Post processing to create diffusion tensor and diffusion coefficients
 process_signal::process_signal(std::vector<particle_state> &states, substrate &substrate_input, sequence &sequence_input, Eigen::MatrixXd &pos0){
+
+    // Initializing
     N_p = states.size();
 
     phase_all = Eigen::MatrixXd::Zero(N_p, 3);
@@ -18,6 +21,7 @@ process_signal::process_signal(std::vector<particle_state> &states, substrate &s
     insideECS.resize(N_p, 1);
     insideECS.fill(false);
 
+    // Check the status of the final position of each particle 
     for (int i = 0; i < N_p; i++){
         phase_all(i, Eigen::all) = states[i].phase.transpose();
         position_all(i, Eigen::all) = states[i].position.transpose();
@@ -33,6 +37,7 @@ process_signal::process_signal(std::vector<particle_state> &states, substrate &s
         insideECS(i) = states[i].myoindex < 0;
     }
 
+    // Sorting particles according to particle final position
     phase_ECS = process_signal::find_element(phase_all, (insideECS and insideVoxel and valid));
     phase_ICS = process_signal::find_element(phase_all, (not(insideECS) and insideVoxel and valid));
     displacement_all = position_all - pos0;

@@ -10,12 +10,15 @@ class process_signal{
 
 public:
 
+    // Constructors
     process_signal() = default;
     process_signal(std::vector<particle_state> &states, substrate &substrate_input, sequence &sequence_input, Eigen::MatrixXd &pos0);
 
     Eigen::Matrix3d process_phase(Eigen::MatrixXd &phase, double &bvalue);
     void process_displacement(Eigen::MatrixXd &displacement, double &T);
 
+
+    // Results
     double bvalue;
     Eigen::Matrix3d tensor = Eigen::Matrix3d::Zero(3,3);
 
@@ -33,15 +36,14 @@ public:
     Eigen::MatrixXd displacement_ICS;
     Eigen::MatrixXd displacement_ECS;
 
-
-    bool no_tensor = false;
-private:
-
     Eigen::Array<bool, Eigen::Dynamic, 1> valid;
     Eigen::Array<bool, Eigen::Dynamic, 1> insideECS;
     Eigen::Array<bool, Eigen::Dynamic, 1> insideVoxel;
 
+    bool no_tensor = false;
+private:
 
+    // Finding array mask
     Eigen::MatrixXd find_element(Eigen::MatrixXd &target, Eigen::Array<bool, Eigen::Dynamic, 1> input);
 
     // Number of particles
