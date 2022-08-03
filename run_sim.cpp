@@ -124,9 +124,10 @@ int main(int argc, char *argv[]){
     Eigen::MatrixXd pos0 = system.get_position();
 
     // Testing module
-    testing unit_test("unit_test.mat");
+    // testing unit_test("unit_test.mat");
     // system.load_test_module(unit_test);
 
+    // Simulation of particles
     auto begin_simulation = std::chrono::steady_clock::now();
     std::cout << "Random Walk for cardiac Diffusion Tensor Imaging" << std::endl;
     std::cout << "Simulation of " << particles.get_N_p() << " particles starts" << std::endl;

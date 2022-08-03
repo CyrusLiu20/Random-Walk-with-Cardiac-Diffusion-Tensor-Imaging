@@ -12,6 +12,7 @@ public:
 
     saving_file(std::vector<particle_state> &particle_states, Eigen::MatrixXd &pos0, process_signal &post_processing){
         
+        // Creating .mat file
         const char *filename = "output.mat";
         mat_t *matfp = NULL; //matfp contains pointer to MAT file or NULL on failure
         matfp = Mat_CreateVer(filename, NULL, MAT_FT_MAT5); //or MAT_FT_MAT4 / MAT_FT_MAT73
@@ -33,12 +34,21 @@ public:
         saving_file::save_matrix(matfp, post_processing.phase_ECS.rows(), post_processing.phase_ECS.cols(), post_processing.phase_ECS.data(), "phase_ECS");
         saving_file::save_matrix(matfp, post_processing.phase_ICS.rows(), post_processing.phase_ICS.cols(), post_processing.phase_ICS.data(), "phase_ICS");
 
+        // Saving all the boolean arrays
+        Eigen::MatrixXd valid_matrix = post_processing.valid.cast<double>();
+        Eigen::MatrixXd inside_voxel_matrix = post_processing.insideVoxel.cast<double>();
+        Eigen::MatrixXd inside_ECS_matrix = post_processing.insideECS.cast<double>();
+    
+        saving_file::save_matrix(matfp, valid_matrix.rows(), valid_matrix.cols(), valid_matrix.data(), "valid");
+        saving_file::save_matrix(matfp, inside_voxel_matrix.rows(), inside_voxel_matrix.cols(), inside_voxel_matrix.data(), "inside_voxel");
+        saving_file::save_matrix(matfp, inside_ECS_matrix.rows(), inside_ECS_matrix.cols(), inside_ECS_matrix.data(), "inside_ECS");
 
         Mat_Close(matfp);
     }
 
 private:
 
+    // Saving scalar
     void save_double(mat_t *matfp, double &input, const char* fieldname){
         double mydouble = input;
         size_t dim[2] = { 1, 1 };
@@ -47,10 +57,8 @@ private:
         Mat_VarFree(variable);
     }
 
-
+    // Save matrix structured data
     void save_matrix(mat_t *matfp, unsigned int first, unsigned int second, double *input, const char* fieldname){
-        // write matrix
-
         double *matrix = input;
 
         size_t dim2d[2] = {first, second};
@@ -58,8 +66,6 @@ private:
         Mat_VarWrite(matfp, variable2d, MAT_COMPRESSION_NONE);
         Mat_VarFree(variable2d);
     }
-
-
 
 };
 
