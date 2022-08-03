@@ -22,7 +22,6 @@ transform_parameter transform::global2local(Eigen::Vector3d &position){
         return output;
     }
 
-    // std::cout << "Find y slice position input : " << position(1) << std::endl;
     double y_slice = transform::find_yslice(position(1));
 
     if (transform::absolute(y_slice) < dy/2){ // i.e. slice [0, dy], NOT [-dy, 0] (because we check the first coordinate, i.e. 0)
@@ -33,24 +32,11 @@ transform_parameter transform::global2local(Eigen::Vector3d &position){
         output.angle = (deg_rot_per_L_in_y*M_PI/180)*y_slice;
         output.angle_reverse = -output.angle;
     }
-
-// std::cout << "Y_slice : " << y_slice << std::endl;
-// std::cout << "angle : " << output.angle << std::endl;
  
     // Rotate position
     Eigen::Vector3d position_rotated, position_slice; 
-    
-    // See if it's more efficient without lamda function
-    // auto fn_Rot = [](Eigen::Vector3d &pos, double &theta){Eigen::Matrix3d rotation;
-    //                                                     rotation << std::cos(theta), 0, std::sin(theta),
-    //                                                                 0, 1, 0,
-    //                                                                 -std::sin(theta), 0, std::cos(theta);
-    //                                                     Eigen::Vector3d output = rotation*pos;  
-    //                                                     return output;};
-    // position_rotated = fn_Rot(position, angle_reverse);
 
     position_rotated = transform::rotate_y(position, output.angle_reverse);
-    // position_slice << position_rotated(0), std::fmod(position_rotated(1), dy), position_rotated(2);
     position_slice << position_rotated(0), transform::custom_mod(position_rotated(1), dy), position_rotated(2);
 
     // Apply sin(x) displacement in z'
@@ -73,7 +59,6 @@ transform_parameter transform::global2local(Eigen::Vector3d &position){
     double ddzz = (output.iZ-1)*dz;
 
     output.position_local << xCoord - ddxx, yCoord, zCoord - ddzz;
-    // std::cout << output.position_local << std::endl;
 
     return output;
 }
@@ -81,6 +66,7 @@ transform_parameter transform::global2local(Eigen::Vector3d &position){
 // Did not use lambda functions
 // some reason dz in Matlab does not change at all
 
+// Transforming back to local coordinates
 Eigen::Vector3d transform::local2global(Eigen::Vector3d &pos_local, int &iX, int &iY, int &iZ){
     int iX_new = iX - 1;
     int iY_new = iY - 1;
@@ -112,6 +98,7 @@ Eigen::Vector3d transform::local2global(Eigen::Vector3d &pos_local, int &iX, int
     return pos_global;
 }
 
+// Rotate position vector
 Eigen::Vector3d transform::rotate_y(Eigen::Vector3d &position, double &theta){
     Eigen::Matrix3d rotation = Eigen::Matrix3d::Zero(3, 3);
     rotation << std::cos(theta), 0, std::sin(theta),
@@ -138,6 +125,7 @@ double transform::find_yslice(double &y_position){
         }
     }
 
+    // Lost particle (Does not happen very often)
     if (not(found)){
         throw std::logic_error("Transform::find_yslice::where', 'Corresponding slice not found'");
         return -1;
