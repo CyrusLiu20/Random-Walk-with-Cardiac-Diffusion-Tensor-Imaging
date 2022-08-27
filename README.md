@@ -7,6 +7,7 @@ This code provides an easy-to-use Monte Carlo simulator to simulate an imaging v
 <br />
 Results will be processed and outputted in .mat file format for visualisation.
 # Compilation
+(Code developed in windows environment)
 1. To build the monte carlo simulator
 ``` 
 make
