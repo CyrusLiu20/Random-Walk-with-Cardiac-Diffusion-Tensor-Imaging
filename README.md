@@ -21,6 +21,9 @@ To change the diffusion configuration, please see the three input files in the i
 Simulation of 500 particles (projection to 2D)
 ![](pics/Distribution.PNG)
 
+What a particle trajectory might look like
+![](pics/Trajectory.PNG)
+
 # Original paper
  1. https://doi.org/10.1002/mrm.27561
 
